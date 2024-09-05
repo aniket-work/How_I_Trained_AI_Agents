@@ -1,0 +1,7 @@
+crewai
+streamlit
+yfinance
+matplotlib
+langchain-groq
+crewai-tools
+python-dotenv
