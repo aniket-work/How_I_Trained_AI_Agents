@@ -4,12 +4,12 @@ from crewai.project import CrewBase, agent, crew, task
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
-from crewai_tools import SerperDevTool, tool
+from crewai_tools import tool
 import yfinance as yf
 
 load_dotenv()
 
-# Define yfinance tools
+
 @tool
 def get_stock_info(ticker: str) -> str:
     """Fetch basic information about a stock"""
@@ -21,6 +21,7 @@ def get_stock_info(ticker: str) -> str:
            f"Current Price: ${info['currentPrice']}\n" \
            f"52 Week High: ${info['fiftyTwoWeekHigh']}\n" \
            f"52 Week Low: ${info['fiftyTwoWeekLow']}"
+
 
 @tool
 def get_stock_financials(ticker: str) -> str:
@@ -36,29 +37,36 @@ class ResearchAgentsCrew():
     """ResearchAgents crew"""
     agents_config = 'config/agents.yaml'
     tasks_config = 'config/tasks.yaml'
+    settings_file = 'settings.json'
 
     def __init__(self) -> None:
-        # Groq
-        self.groq_llm = ChatGroq(
-            temperature=0,
-            groq_api_key=os.environ.get("GROQ_API_KEY"),
-            model_name="llama-3.1-8b-instant",
-        )
+        # Load settings
+        with open(self.settings_file, 'r') as f:
+            self.settings = json.load(f)
 
-        # Ollama
-        self.ollama_llm = ChatOpenAI(
-            model="llama3.1",
-            base_url="http://localhost:11434/v1",
-            api_key="ollama",
-            temperature=0,
-        )
+        # Initialize LLM based on settings
+        if self.settings['llm'] == 'groq':
+            self.llm = ChatGroq(
+                temperature=0,
+                groq_api_key=os.environ.get("GROQ_API_KEY"),
+                model_name=self.settings['groq_model'],
+            )
+        elif self.settings['llm'] == 'ollama':
+            self.llm = ChatOpenAI(
+                model=self.settings['ollama_model'],
+                base_url=self.settings['ollama_base_url'],
+                api_key="ollama",
+                temperature=0,
+            )
+        else:
+            raise ValueError(f"Unsupported LLM: {self.settings['llm']}")
 
     @agent
     def researcher(self) -> Agent:
         return Agent(
             config=self.agents_config['researcher'],
             tools=[get_stock_info, get_stock_financials],  # Example of custom tool, loaded on the beginning of file
-            llm=self.ollama_llm,
+            llm=self.llm,
             verbose=True
         )
 
@@ -66,7 +74,7 @@ class ResearchAgentsCrew():
     def reporting_analyst(self) -> Agent:
         return Agent(
             config=self.agents_config['reporting_analyst'],
-            llm=self.groq_llm,
+            llm=self.llm,
             verbose=True
         )
 
@@ -92,5 +100,4 @@ class ResearchAgentsCrew():
             tasks=self.tasks,  # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
-            # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
         )
