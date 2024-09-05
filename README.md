@@ -81,8 +81,11 @@ This article shows you how to bring that same edge to your work or business. Whe
 4. **Run - AI Agent Training**
 
    ```bash 
-   # Run AI Agent Training
+   # Run AI Agent
    (How_I_Trained_AI_Agents) C:\Users\worka\PycharmProjects\How_I_Trained_AI_Agents\research_agents>crewai run
+   
+   # Train AI Agent 
+   (How_I_Trained_AI_Agents) C:\Users\worka\PycharmProjects\How_I_Trained_AI_Agents\research_agents>crewai train -n 4   
    ```
 
 
